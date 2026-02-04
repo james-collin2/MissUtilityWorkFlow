@@ -5,8 +5,9 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from utils import cleared_date, delay, expire_date_days, is_completed_status_history, is_expired_ticket, overdue_date, format_not_completed_status_history, get_not_completed_status_history
-from driver import click_btn, find_element_or_none, find_elements, get_text
+from driver import find_element_or_none, find_elements, get_text
 from typing import Optional, Dict
+from re import match
 
 
 class Ticket:
@@ -98,17 +99,24 @@ def get_main_data(driver: WebDriver) -> list[dict]:
     data = []
     if tickets:
         print(f"total {len(tickets)} tickets found.")
+        fields_xpath = '//th[not(@style="display:none")]'
+        fields = get_fields(WebDriverWait(driver, 5), fields_xpath)
+        col_release = lookup_field("release", fields)
+        col_response = lookup_field("response", fields)
+        col_cross_street = lookup_field("cross street", fields)
+        col_expiration = lookup_field("expiration", fields)
+        col_id = lookup_field("ticket #", fields)
         for t in tickets:
-            expire_date = t.find_element(By.XPATH, './td[8]').text
+            expire_date = t.find_element(By.XPATH, f'./td[{col_expiration}]').text
             days_to_expire = expire_date_days(expire_date)
             if is_expired_ticket(days_to_expire):
                 continue
 
-            id = t.find_element(By.XPATH, './td[1]/a').text
-            url = t.find_element(By.XPATH, './td[1]/a').get_attribute('href')
-            release_date = t.find_element(By.XPATH, './td[2]').text
-            response_date = t.find_element(By.XPATH, './td[3]').text
-            cross_street = t.find_element(By.XPATH, './td[5]').text.strip()
+            id = t.find_element(By.XPATH, f'./td[{col_id}]/a').text
+            url = t.find_element(By.XPATH, f'./td[{col_id}]/a').get_attribute('href')
+            release_date = t.find_element(By.XPATH, f'./td[{col_release}]').text
+            response_date = t.find_element(By.XPATH, f'./td[{col_response}]').text
+            cross_street = t.find_element(By.XPATH, f'./td[{col_cross_street}]').text.strip()
             ticket = dict(id_ticket=id,url=url,release_date=release_date,response_date=response_date,cross_street=cross_street,expire_date=expire_date)
             data.append(ticket)
     return data
@@ -188,3 +196,21 @@ def normalize(tickets: list[dict]) -> list[dict]:
         normalized_t.append(ticket.to_dict())
 
     return normalized_t
+
+
+def lookup_field(s: str, fields: list[list]) -> int:
+    for field in fields:
+        if match(s, field[0]):
+            return field[1]
+    return 0
+
+
+def get_fields(wait: WebDriverWait, fields_xpath: str) -> list[list]:
+    columns = find_elements(wait, fields_xpath)
+    idx = []
+    if columns:
+        for i, col in enumerate(columns, start=1):
+            name = col.text.lower().strip()
+            idx.append([name, i])
+    return idx
+
