@@ -5,6 +5,9 @@ from random import uniform
 from datetime import datetime, timedelta
 from typing import List, Dict
 from collections import defaultdict
+import ua_generator
+from ua_generator.options import Options
+from ua_generator.data.version import VersionRange
 
 
 def overdue_date(expire_date_str: str):
@@ -31,6 +34,7 @@ def expire_date_days(expire_date_str: str):
 
 def is_expired_ticket(days_to_expire: int) -> bool:
     return days_to_expire < 0
+
 
 def group_keys_by_value(data: List[Dict[str, str]]) -> Dict[str, List[str]]:
     grouped = defaultdict(list)
@@ -93,3 +97,13 @@ def format_not_completed_status_history(status_history: list[dict]) -> str:
 def check_ticket_type(former_id_ticker: str) -> str:
     return "New" if len(former_id_ticker) == 0 else "Update-Renewal"
 
+
+def get_random_user_agent() -> dict:
+    options = Options()
+    options.version_ranges = {
+        'chrome': VersionRange(140, 144),  # Choose version between 125 and 129
+    }
+    ua = ua_generator.generate(browser='chrome', platform='windows', options=options)
+    #ua.headers.accept_ch("Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List")
+    #return ua.headers.get()
+    return ua

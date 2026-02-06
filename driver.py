@@ -1,3 +1,4 @@
+from sys import platform
 from selenium.common.exceptions import TimeoutException
 from selenium import webdriver
 from selenium.webdriver.chrome.webdriver import WebDriver
@@ -9,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.core.os_manager import ChromeType
-
+from utils import get_random_user_agent
 
 def safe_element_located(driver, by, value):
     try:
@@ -29,7 +30,7 @@ def find_element_or_none(wait: WebDriverWait, selector: str) -> WebElement | Non
 
 def get_text(wait: WebDriverWait, xpath: str) -> str | None:
     try:
-        elm = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+        elm = wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
         return elm.text.strip()
     except:
         print(f"xpath not found {xpath}")
@@ -42,6 +43,7 @@ def click_btn(wait: WebDriverWait, xpath: str) -> None:
         )
         children.click()
     except:
+        print("button not foud")
         pass
 
 def find_elements(wait: WebDriverWait, xpath: str) -> list[WebElement] | None:
@@ -67,6 +69,8 @@ def setup_driver(headless: bool = False) -> WebDriver:
     options.add_experimental_option("useAutomationExtension", False)
     #options.add_argument("--disable-images")
     #options.add_argument("--blink-settings=imagesEnabled=false")
+    ua = get_random_user_agent()
+    options.add_argument(f"--user-agent={ua}")
     options.add_argument("--window-size=1920,1080")
     service = Service(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install())
     return webdriver.Chrome(service=service, options=options)

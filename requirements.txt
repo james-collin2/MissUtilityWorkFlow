@@ -22,6 +22,7 @@ trio-websocket==0.12.2
 types-certifi==2021.10.8.3
 types-urllib3==1.26.25.14
 typing_extensions==4.15.0
+ua-generator==2.0.20
 urllib3==2.6.3
 webdriver-manager==4.0.2
 websocket-client==1.9.0

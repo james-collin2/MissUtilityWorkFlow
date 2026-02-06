@@ -5,7 +5,7 @@ from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from utils import cleared_date, delay, expire_date_days, is_completed_status_history, is_expired_ticket, overdue_date, format_not_completed_status_history, get_not_completed_status_history
-from driver import find_element_or_none, find_elements, get_text
+from driver import find_element_or_none, find_elements, get_text, click_btn
 from typing import Optional, Dict
 from re import match
 
@@ -124,16 +124,33 @@ def get_main_data(driver: WebDriver) -> list[dict]:
 
 def get_ticket_data(driver: WebDriver, data: list[dict]) -> list[dict]:
     tickets_data = []
-    wait = WebDriverWait(driver, 5)
+    wait = WebDriverWait(driver, 3)
     print(f"scraping {len(data)} non-expired tickets.")
     for ticket in data:
+        print(ticket.get("id_ticket"))
         ticket_data = dict()
         ticket_data.update(ticket)
         driver.get(ticket["url"])
         print(f"{ticket['url']}")
-        delay(1, 3)
+        delay(2, 5)
+        click_btn(wait,'/html/body/div[6]/div[3]/div/button')
+        job_name_elm = get_text(wait, '//*[@id="tktRem"]')
+        if not job_name_elm:
+            print("jobname not found")
+        print("job: ", job_name_elm)
+
+        elm = get_text(wait, '//*[@id="collapsable1"]/div[2]/div[1]/span')
+
+        if elm:
+            is_update_of = elm.lower() == 'update of'
+            if is_update_of:
+                update_of = get_text(wait, '//*[@id="collapsable1"]/div[2]/div[2]/a/span')
+                ticket_data.update(former_id_ticket=update_of)
+        #ticket_type = get_text(wait,'//*[@id="collapsable1"]/div[last()]/div[2]')
+        #if ticket_type:
+        #    ticket_type = ticket_type.replace("\n", " ")
         status_history_elm = find_elements(wait, '//*[@id="DistrictNotificationTable"]/tbody/tr')
-        #click_btn(wait,'/html/body/div[6]/div[3]/div/button')
+        print(status_history_elm)
         if status_history_elm:
             history = []
             for row in status_history_elm:
@@ -143,18 +160,9 @@ def get_ticket_data(driver: WebDriver, data: list[dict]) -> list[dict]:
                 sh[district] = status
                 history.append(sh)
             ticket_data.update(status_history=history)
-        job_name_elm = get_text(wait, '//*[@id="tktRem"]')
-        elm = get_text(wait, '//*[@id="collapsable1"]/div[2]/div[1]/span')
-        if elm:
-            is_update_of = elm.lower() == 'update of'
-            if is_update_of:
-                update_of = get_text(wait, '//*[@id="collapsable1"]/div[2]/div[2]/a/span')
-                ticket_data.update(former_id_ticket=update_of)
-        ticket_type = get_text(wait,'//*[@id="collapsable1"]/div[last()]/div[2]')
-        if ticket_type:
-            ticket_type = ticket_type.replace("\n", " ")
-        ticket_data.update(job_name=job_name_elm,ticket_type=ticket_type)
+        ticket_data.update(job_name=job_name_elm)
         tickets_data.append(ticket_data)
+        print("FInish")
     return tickets_data
 
 
@@ -179,9 +187,11 @@ def normalize(tickets: list[dict]) -> list[dict]:
         if expire and history:
             days_to_expire = expire_date_days(expire)
             ticket.days_to_expire = str(days_to_expire)
+            ####
             status = is_completed_status_history(history)
-            if status:
-                continue
+            #if status:
+            #    continue
+            ####
             not_complete = get_not_completed_status_history(history)
             formatted_status = format_not_completed_status_history(not_complete)
             ticket.permit = formatted_status
