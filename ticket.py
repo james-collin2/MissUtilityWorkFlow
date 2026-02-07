@@ -124,7 +124,7 @@ def get_main_data(driver: WebDriver) -> list[dict]:
 
 def get_ticket_data(driver: WebDriver, data: list[dict]) -> list[dict]:
     tickets_data = []
-    wait = WebDriverWait(driver, 3)
+    wait = WebDriverWait(driver, 4)
     print(f"scraping {len(data)} non-expired tickets.")
     for ticket in data:
         print(ticket.get("id_ticket"))
@@ -132,7 +132,7 @@ def get_ticket_data(driver: WebDriver, data: list[dict]) -> list[dict]:
         ticket_data.update(ticket)
         driver.get(ticket["url"])
         print(f"{ticket['url']}")
-        delay(2, 5)
+        delay(1, 3)
         click_btn(wait,'/html/body/div[6]/div[3]/div/button')
         job_name_elm = get_text(wait, '//*[@id="tktRem"]')
         if not job_name_elm:
